@@ -1,6 +1,10 @@
-"""Ideal rocket propulsion calculations."""
+
+"""Rocket propulsion calculations."""
 
 import math
+
+
+STANDARD_GRAVITY_M_S2 = 9.80665
 
 
 def thrust_newtons(
@@ -27,8 +31,6 @@ def thrust_newtons(
 
     return mass_flow_rate_kg_s * exhaust_velocity_m_s
 
-STANDARD_GRAVITY_M_S2 = 9.80665
-
 
 def thrust_to_weight_ratio(
     thrust_n: float,
@@ -49,8 +51,6 @@ def thrust_to_weight_ratio(
         ValueError: If inputs are non-finite, thrust is negative,
             or mass or gravity is not positive.
     """
-    import math
-
     if not math.isfinite(thrust_n) or thrust_n < 0:
         raise ValueError("Thrust must be finite and non-negative.")
 
@@ -61,3 +61,37 @@ def thrust_to_weight_ratio(
         raise ValueError("Gravity must be finite and greater than zero.")
 
     return thrust_n / (mass_kg * gravity_m_s2)
+
+
+def ideal_delta_v(
+    exhaust_velocity_m_s: float,
+    initial_mass_kg: float,
+    final_mass_kg: float,
+) -> float:
+    """Calculate ideal delta-v using the Tsiolkovsky rocket equation.
+
+    Args:
+        exhaust_velocity_m_s: Effective exhaust velocity in m/s.
+        initial_mass_kg: Vehicle mass before propellant is consumed, in kg.
+        final_mass_kg: Vehicle mass after propellant is consumed, in kg.
+
+    Returns:
+        Ideal change in velocity in m/s.
+
+    Raises:
+        ValueError: If inputs are non-finite, masses are not positive,
+            exhaust velocity is negative, or final mass exceeds initial mass.
+    """
+    if not math.isfinite(exhaust_velocity_m_s) or exhaust_velocity_m_s < 0:
+        raise ValueError("Exhaust velocity must be finite and non-negative.")
+
+    if not math.isfinite(initial_mass_kg) or initial_mass_kg <= 0:
+        raise ValueError("Initial mass must be finite and greater than zero.")
+
+    if not math.isfinite(final_mass_kg) or final_mass_kg <= 0:
+        raise ValueError("Final mass must be finite and greater than zero.")
+
+    if final_mass_kg > initial_mass_kg:
+        raise ValueError("Final mass cannot exceed initial mass.")
+
+    return exhaust_velocity_m_s * math.log(initial_mass_kg / final_mass_kg)
