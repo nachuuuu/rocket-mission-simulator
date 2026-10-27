@@ -1,66 +1,102 @@
-# Validation Strategy
+# Validation and Testing
 
 ## Purpose
 
-Validation checks whether the code follows the documented mathematical model and whether numerical results behave as expected. Passing tests does not establish that the simplified model is suitable for real launch or mission planning.
+This document describes how the Rocket Mission & Orbit Simulator is tested and how numerical results should be interpreted.
+
+Tests establish that implemented functions behave as expected for selected cases. Passing tests does not prove that the simplified physical model is suitable for real-world mission design.
+
+## Test framework
+
+The project uses `pytest`.
+
+Run the complete test suite from the repository root:
+
+```powershell
+python -m pytest
+```
+
+Run an individual module's tests with:
+
+```powershell
+python -m pytest tests/test_propulsion.py
+python -m pytest tests/test_orbit.py
+python -m pytest tests/test_visualization.py
+python -m pytest tests/test_classification.py
+python -m pytest tests/test_sweep.py
+```
+
+A test file should exist before running its corresponding command.
 
 ## Validation layers
 
-### 1. Input and unit validation
+### 1. Propulsion calculations — implemented
 
-For every public function:
-- Document the units of every argument and return value.
-- Test invalid values and domain boundaries.
-- Reject non-finite inputs when they would make the result meaningless.
-- Avoid mixing altitude above Earth's surface with geocentric radius from Earth's centre.
+Tests cover ideal rocket performance calculations and their expected numerical behavior, including delta-v calculations and input handling.
 
-### 2. Analytical orbital references
+These tests validate the implemented mathematical model, not the performance of a real engine or launch vehicle.
 
-The existing orbital tests use an altitude of 400 km, convert it to geocentric radius by adding the configured mean Earth radius, and compare:
-- Gravity magnitude against approximately 8.6943 m/s².
-- Circular speed against approximately 7,672.6 m/s.
-- Circular period against approximately 92.41 minutes.
+### 2. Orbital calculations — implemented
 
-The test suite also checks that higher circular radii have lower gravity and circular speed, but longer orbital periods.
+Orbital calculations are tested using representative states and expected mathematical behavior. Constants and units must remain consistent across calculations.
 
-### 3. Propulsion references (planned in M1)
+### 3. Numerical integration and visualization — implemented
 
-Test thrust, thrust-to-weight ratio, ideal rocket-equation delta-v, and stage mass accounting against hand-calculated or independently derived reference values. Include invalid and boundary inputs, including non-positive masses and inconsistent stage masses.
+Tests cover implemented trajectory integration and visualization functionality. Numerical output should be inspected for sensible behavior, and plotting code should be tested without requiring manual interaction where possible.
 
-### 4. Dynamics and integration (planned in M3)
+### 4. Initial-condition classification — implemented
 
-Use a circular-orbit initial condition as a reference:
-- Set the speed from the analytical circular-orbit formula.
-- Verify gravity is directed toward the origin.
-- Check that radius and speed remain close to their expected behavior over a suitable integration interval.
-- Report numerical drift and ensure the tolerance reflects the selected numerical method and step size.
+Classification tests cover representative orbital outcomes:
 
-Do not select tolerances merely to make a test pass; explain the expected numerical error.
+- Bound orbit.
+- Earth-intersecting trajectory.
+- Escaping trajectory.
+- Unbound inbound trajectory that intersects Earth.
+- Invalid states and invalid numerical tolerances.
 
-### 5. Outcome classification (planned in M4)
+The classifier uses specific orbital energy, angular momentum, eccentricity, periapsis, and the configured Earth radius.
 
-Construct representative Earth-intersecting, bound, and escaping cases. Define classification criteria and tolerances before running broad sweeps. Include cases close to boundaries and make any ambiguity explicit.
+Near-zero specific energy is treated as parabolic or unbound according to the configured energy tolerance. Classification depends on the stated analytical model and should not be interpreted as a complete propagation result.
 
-### 6. Convergence study (planned in M5)
+### 5. Scenario sweeps — implemented
 
-Run the same reference scenario using at least three time-step sizes. Compare a clearly defined metric, such as final-state error against a reference solution or drift in a conserved quantity. Record the step sizes and observed differences. Smaller steps are not automatically proof of correctness, so compare against analytical or otherwise justified references.
+Sweep tests cover the generation of speed and flight-path-angle combinations, expected output structure, and invalid inputs.
 
-## Test execution
+The default sweep uses:
 
-On the established Windows environment:
+- Altitude: 400,000 m.
+- Insertion speed: 6,500–11,000 m/s in 250 m/s increments.
+- Flight-path angle: −30° to +30° in 5° increments.
+- Total: 247 scenarios.
+
+Run the sweep with:
 
 ```powershell
-& "D:\rocket-mission-simulator\.venv\Scripts\python.exe" -m pytest
+python scripts/scenario_sweep.py
 ```
 
-## Reporting results
+The script generates `results/scenario_sweep.csv`. The output should contain the initial conditions and classification metrics for each evaluated scenario.
 
-A validation report should state:
-- Code revision or commit.
-- Python and dependency versions where relevant.
-- Physical constants and initial conditions.
-- Numerical method and settings.
-- Tests run and their outcomes.
-- Metrics, tolerances, and known limitations.
+### 6. Numerical convergence — planned
 
-Never describe a test as passing unless it was actually run and its result observed.
+Future convergence work should compare numerical solutions at different integration step sizes or tolerances, where applicable. Acceptance criteria should be defined for the quantities being compared.
+
+## Interpreting results
+
+- A passing test suite confirms behavior only for the cases covered by the tests.
+- Numerical outputs depend on the model assumptions, units, and numerical methods.
+- An `earth-intersecting` classification indicates a mathematically Earth-intersecting trajectory under the analytical model.
+- A negative periapsis altitude is a mathematical indicator of Earth intersection, not a physically realizable below-surface orbit.
+- An `escaping` classification does not imply that a real spacecraft can complete a mission or achieve a particular operational objective.
+- The current model does not represent all real-world atmospheric, propulsion, guidance, structural, or launch constraints.
+
+## Validation policy
+
+When adding a feature:
+
+1. Add tests for representative valid inputs.
+2. Add tests for invalid inputs and boundary conditions where applicable.
+3. Run the relevant test module.
+4. Run the complete test suite.
+5. Document any new assumptions, tolerances, or limitations.
+6. Review generated outputs for consistency with the model's intended behavior.

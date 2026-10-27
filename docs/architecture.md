@@ -1,80 +1,112 @@
-# Software Architecture
+# Architecture
 
-## Design principle
+## Project overview
 
-Keep the first version small, testable, and organized around physical responsibilities. Analytical calculations, propulsion calculations, numerical dynamics, scenario orchestration, and plotting should remain separable. Planned modules must not be treated as implemented until they exist and have tests.
+Rocket Mission & Orbit Simulator is a Python project for exploring idealized rocket performance and orbital mechanics. The codebase separates propulsion calculations, orbital state calculations, numerical integration, trajectory visualization, orbital classification, and scenario sweeps.
 
-## Current implementation
+The simulator is intended for educational and analytical use. Its idealized results are not a substitute for mission-grade flight dynamics or launch-vehicle engineering.
 
-### `rocket_sim.orbit`
+## Repository structure
 
-File: `src/rocket_sim/orbit.py`
+```text
+rocket-mission-simulator/
+├── data/                       # Input datasets and supporting data
+├── docs/
+│   ├── architecture.md         # System design
+│   ├── model-assumptions.md    # Physical assumptions and limitations
+│   ├── roadmap.md              # Milestones and implementation status
+│   └── validation.md           # Testing and validation strategy
+├── results/
+│   └── scenario_sweep.csv      # Generated orbital scenario results
+├── scripts/
+│   ├── build_targets.py        # Dataset target generation utility
+│   └── scenario_sweep.py      # Orbital scenario sweep utility
+├── src/
+│   └── rocket_sim/
+│       ├── classification.py  # Analytical orbital classification
+│       ├── orbit.py           # Orbital constants and calculations
+│       ├── propulsion.py      # Ideal rocket performance calculations
+│       ├── sweep.py           # Insertion-condition parameter sweeps
+│       └── visualization.py   # Orbital trajectory visualizations
+└── tests/
+    ├── test_classification.py
+    ├── test_orbit.py
+    ├── test_propulsion.py
+    ├── test_sweep.py
+    └── test_visualization.py
+```
 
-Responsibilities:
-- Store the initial Earth gravitational parameter and mean radius constants.
-- Compute central-gravity acceleration magnitude from geocentric radius.
-- Compute circular-orbit speed.
-- Compute circular-orbit period.
-- Reject non-finite or non-positive radii.
+The exact contents of `data/` and `results/` can vary as the project evolves. Generated files should be reproducible from their corresponding scripts wherever practical.
 
-The current acceleration function returns a **magnitude**, not a vector. Directional acceleration belongs in the planned dynamics layer.
+## Main components
 
-### Tests
+### Propulsion
 
-File: `tests/test_orbit.py`
+`propulsion.py` contains ideal rocket performance calculations, including the Tsiolkovsky rocket equation and ideal delta-v calculations. These calculations use simplified assumptions and do not model a complete powered flight.
 
-Responsibilities:
-- Compare reference values at 400 km altitude.
-- Check expected monotonic relationships with radius.
-- Verify invalid inputs are rejected.
+### Orbital mechanics
 
-## Planned module boundaries
+`orbit.py` contains orbital constants and core calculations used by the simulator. The orbital model uses a two-dimensional state representation:
 
-These are proposed responsibilities following the roadmap; modules may be introduced when their milestone begins.
+`[x_m, y_m, vx_m_s, vy_m_s]`
 
-| Module | Responsibility | Milestone |
-|---|---|---|
-| `propulsion.py` | Thrust, TWR, ideal delta-v, ideal staging | M1 |
-| `orbit.py` | Analytical orbital calculations and constants | M2 baseline |
-| `dynamics.py` | Two-dimensional state derivatives under central gravity | M3 |
-| `integration.py` | Numerical integration and solver settings | M3 |
-| `scenarios.py` | Initial conditions, parameter sweeps, trajectory outcomes | M4 |
-| `plotting.py` | Labelled trajectory and convergence figures | M5 |
+Position is measured in metres and velocity in metres per second.
 
-## Data and units
+### Visualization
 
-Use SI units internally:
-- Position and radius: metres.
-- Time: seconds.
-- Mass: kilograms.
-- Force: newtons.
-- Velocity: metres per second.
-- Acceleration: metres per second squared.
-- Gravitational parameter: cubic metres per second squared.
+`visualization.py` provides plots for inspecting orbital trajectories. Visualization supports analysis of simulated results; it does not increase the physical fidelity of the underlying model.
 
-For two-dimensional trajectories, choose and document a single state-vector convention before implementing the dynamics layer. A suitable convention is `[x_m, y_m, vx_m_s, vy_m_s]`, with the origin at Earth's centre and the initial position and velocity expressed in the same inertial plane.
+### Orbital classification
 
-## Dependency direction
+`classification.py` classifies an initial orbital state into one of three categories:
 
-The intended dependency structure is:
+- `earth-intersecting`
+- `bound`
+- `escaping`
 
-1. Constants and analytical orbital equations form the low-level reference layer.
-2. Propulsion formulas provide independent ideal performance calculations.
-3. Dynamics use the orbital constants but should not depend on plotting.
-4. Integration advances the state using dynamics.
-5. Scenario code constructs inputs and classifies results.
-6. Plotting and reporting consume simulation outputs.
+The analytical classification uses specific orbital energy, angular momentum, eccentricity, periapsis, and the configured Earth radius. It assumes a point-mass Earth and vacuum.
 
-Tests should validate each layer without requiring plots or a complete end-to-end simulation.
+### Scenario sweeps
 
-## Error handling
+`sweep.py` evaluates combinations of insertion speed and flight-path angle at a specified altitude. Each result includes the initial conditions and orbital classification metrics.
 
-Public numerical functions should:
-- Define units and input meaning in docstrings.
-- Reject invalid domains explicitly.
-- Avoid silently clipping physically invalid values.
-- Use tolerances in floating-point assertions where appropriate.
+`scripts/scenario_sweep.py` runs the default sweep and writes the results to `results/scenario_sweep.csv`.
 
-## Reproducibility
+The default sweep evaluates 19 insertion speeds and 13 flight-path angles, for a total of 247 scenarios.
 
-Record initial conditions, numerical method, time step or tolerances, physical constants, and relevant classification settings with scenario results. Avoid presenting output as physically authoritative when the model omits important real-world effects.
+## Data flow
+
+1. Define physical constants and an initial orbital state.
+2. Calculate propulsion or orbital quantities using the relevant module.
+3. Integrate or inspect orbital motion using the available simulation functionality.
+4. Visualize trajectories where applicable.
+5. Classify initial conditions and evaluate parameter combinations.
+6. Export generated scenario results for inspection and further analysis.
+
+Not every workflow requires every component.
+
+## Validation
+
+Each major module has corresponding tests under `tests/`. Tests check numerical behavior, representative physical cases, input validation, and output structure.
+
+Run the complete suite from the repository root:
+
+```powershell
+python -m pytest
+```
+
+Run the scenario sweep with:
+
+```powershell
+python scripts/scenario_sweep.py
+```
+
+## Current limitations
+
+- The orbital model is simplified and does not constitute a high-fidelity mission simulator.
+- The analytical classifier assumes a point-mass Earth and vacuum.
+- The classifier evaluates initial conditions; it does not simulate atmospheric entry, powered flight, or guidance.
+- Ideal propulsion calculations do not account for all real engine, vehicle, and operational losses.
+- Scenario-sweep classifications do not establish real-world launch feasibility.
+
+See `model-assumptions.md` for the physical assumptions and `roadmap.md` for planned improvements.

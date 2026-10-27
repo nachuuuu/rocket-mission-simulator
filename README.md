@@ -2,7 +2,7 @@
 
 An educational Python project connecting ideal rocket-propulsion calculations with simplified two-dimensional orbital trajectories around Earth.
 
-**Status:** M1 ideal propulsion calculations and M2 analytical orbital references are implemented with tests. M3 has started: two-dimensional central-gravity state derivatives are implemented; numerical integration and circular-orbit propagation validation remain to be completed. Scenario classification, sweeps, and plotting are still planned.
+**Current status:** M0–M4 implementation is present. The project includes ideal propulsion and staging calculations, analytical orbital references, two-dimensional central-gravity dynamics, numerical integration, trajectory visualization, and analytical initial-condition classification with parameter sweeps. M5 convergence analysis and M6 release review remain on the roadmap.
 
 ## Project goals
 
@@ -10,42 +10,74 @@ An educational Python project connecting ideal rocket-propulsion calculations wi
 - Provide analytical orbital reference calculations for Earth's central-gravity model.
 - Integrate simplified two-dimensional point-mass trajectories.
 - Explore insertion-speed and flight-path-angle scenarios.
+- Classify initial orbital conditions as Earth-intersecting, bound, or escaping.
 - Assess numerical integration accuracy through step-size convergence tests.
 - Document assumptions, validation methods, and limitations.
 
 ## Current capabilities
 
-### Propulsion — M1
+### Propulsion and staging — M1
 
 The `rocket_sim.propulsion` module provides:
+
 - `thrust_newtons(mass_flow_rate_kg_s, exhaust_velocity_m_s)`
 - `thrust_to_weight_ratio(thrust_n, mass_kg, gravity_m_s2=9.80665)`
 - `ideal_delta_v(exhaust_velocity_m_s, initial_mass_kg, final_mass_kg)`
 
-The `rocket_sim.staging` module provides:
-- `RocketStage(dry_mass_kg, propellant_mass_kg, exhaust_velocity_m_s)`
-- `ideal_staged_delta_v(stages, payload_mass_kg)`
+The `rocket_sim.staging` module provides ideal staged delta-v calculations using explicit stage and payload mass accounting.
 
 These are ideal calculations. They exclude gravity losses, atmospheric drag, steering losses, and real engine constraints.
 
 ### Orbital references — M2
 
 The `rocket_sim.orbit` module provides:
-- `gravitational_acceleration(radius_m)`: gravity magnitude under the inverse-square central-gravity model.
-- `circular_orbital_velocity(radius_m)`: circular-orbit speed.
-- `orbital_period(radius_m)`: circular-orbit period.
 
-Functions use SI units, a geocentric radius in metres, and reject non-finite or non-positive radii.
+- `gravitational_acceleration(radius_m)`
+- `circular_orbital_velocity(radius_m)`
+- `orbital_period(radius_m)`
 
-### Dynamics — M3 in progress
+The model uses SI units, geocentric radius in metres, and Earth's configured gravitational parameter and mean radius.
 
-The `rocket_sim.dynamics.state_derivative(state)` function accepts `[x_m, y_m, vx_m_s, vy_m_s]` and returns `[vx_m_s, vy_m_s, ax_m_s2, ay_m_s2]` for central gravity. Numerical integration and full trajectory propagation are the next implementation tasks.
+### Dynamics and integration — M3
 
-## Model scope
+The dynamics layer represents two-dimensional point-mass motion under Earth's central inverse-square gravity. The state convention is:
 
-The initial model uses a spherical Earth, a central inverse-square gravity field, ideal propulsion equations, and intended two-dimensional point-mass trajectories. It does not represent all physical or engineering effects of a real launch.
+`[x_m, y_m, vx_m_s, vy_m_s]`
 
-See [Model Assumptions](docs/model-assumptions.md) for constants, units, assumptions, and limitations.
+The state derivative returns position rates and acceleration components. Numerical integration and trajectory propagation are implemented separately from the physical equations, and the project includes tests for dynamics, integration, trajectories, and orbital conservation.
+
+### Scenario classification and sweeps — M4
+
+The `rocket_sim.classification` module classifies an initial state using specific orbital energy, angular momentum, eccentricity, periapsis, and the configured Earth radius.
+
+The supported labels are:
+
+- `earth-intersecting`
+- `bound`
+- `escaping`
+
+The `rocket_sim.sweep` module evaluates combinations of insertion speed and flight-path angle. The script `scripts/scenario_sweep.py` writes results to `results/scenario_sweep.csv`.
+
+The included sweep evaluates 247 combinations at an altitude of 400 km, with speeds from 6,500 to 11,000 m/s in 250 m/s increments and flight-path angles from −30° to +30° in 5° increments.
+
+The classifier is an analytical initial-condition assessment under a point-mass Earth and vacuum model. It is not a powered-flight simulation or a mission-feasibility assessment.
+
+### Visualization
+
+The visualization module generates trajectory plots. The existing plot-generation workflow is separate from the analytical scenario sweep.
+
+### Remaining milestones
+
+- **M5 — Plots and convergence:** compare multiple integration step sizes and document numerical convergence.
+- **M6 — Documentation and release:** complete setup instructions, review assumptions, run the full test suite, inspect the final Git diff, and create a release checkpoint.
+
+## Model scope and limitations
+
+The initial model uses a spherical Earth, a central inverse-square gravity field, ideal propulsion equations, and two-dimensional point-mass trajectories.
+
+It does not model atmospheric drag, powered ascent, guidance and control, Earth oblateness, or multi-body perturbations. Analytical classifications and numerical results must not be treated as flight-dynamics certification or used for real-world launch decisions.
+
+See [Model Assumptions](docs/model-assumptions.md), [Software Architecture](docs/architecture.md), [Validation Strategy](docs/validation.md), and [Development Roadmap](docs/roadmap.md).
 
 ## Requirements
 
@@ -59,63 +91,40 @@ See [Model Assumptions](docs/model-assumptions.md) for constants, units, assumpt
 From the project directory:
 
 ```powershell
-cd D:\rocket-mission-simulator
+Set-Location "D:\rocket-mission-simulator"
 py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+& ".\.venv\Scripts\python.exe" -m pip install --upgrade pip
+& ".\.venv\Scripts\python.exe" -m pip install -e ".[dev]"
 ```
 
-If the virtual environment already exists, do not recreate it; install or update dependencies with:
-
-```powershell
-& "D:\rocket-mission-simulator\.venv\Scripts\python.exe" -m pip install -e "D:\rocket-mission-simulator[dev]"
-```
+If the virtual environment already exists, do not recreate it; install or update dependencies with the final command above.
 
 ## Run tests
 
 ```powershell
-& "D:\rocket-mission-simulator\.venv\Scripts\python.exe" -m pytest
+& ".\.venv\Scripts\python.exe" -m pytest
 ```
 
-To run the current orbital references from PowerShell:
+## Generate the scenario sweep
 
 ```powershell
-& "D:\rocket-mission-simulator\.venv\Scripts\python.exe" -c "from rocket_sim.orbit import EARTH_RADIUS, circular_orbital_velocity, orbital_period; r = EARTH_RADIUS + 400_000; print(f'Circular speed: {circular_orbital_velocity(r):.1f} m/s'); print(f'Period: {orbital_period(r) / 60:.2f} minutes')"
+& ".\.venv\Scripts\python.exe" scripts\scenario_sweep.py
 ```
 
-Expected values are approximately 7,673 m/s and 92.4 minutes at 400 km altitude.
+The CSV output is written to `results\scenario_sweep.csv`.
 
 ## Repository layout
 
 ```text
 rocket-mission-simulator/
 ├── docs/
+├── results/
+├── scripts/
 ├── src/rocket_sim/
-│   ├── __init__.py
-│   ├── orbit.py
-│   ├── propulsion.py
-│   ├── staging.py
-│   └── dynamics.py
 ├── tests/
-│   ├── test_orbit.py
-│   ├── test_propulsion.py
-│   ├── test_staging.py
-│   └── test_dynamics.py
 ├── .gitignore
 └── pyproject.toml
 ```
-
-## Development roadmap
-
-1. **M0 — Environment and repository:** established.
-2. **M1 — Propulsion:** thrust, thrust-to-weight ratio, Tsiolkovsky ideal rocket equation, ideal staging, and tests implemented.
-3. **M2 — Orbital equations:** analytical gravity and circular-orbit calculations implemented and tested.
-4. **M3 — Dynamics and integration:** state derivatives implemented; numerical integration and propagated circular-orbit validation remain.
-5. **M4 — Scenario sweeps:** vary insertion speed and flight-path angle; classify outcomes as Earth-intersecting, bound, or escaping.
-6. **M5 — Plots and convergence:** labelled plots, multiple integration step sizes, and a convergence report.
-7. **M6 — Documentation and release:** examples, full test suite, final review, and release checkpoint.
-
-See [Roadmap](docs/roadmap.md) for scope and completion criteria.
 
 ## Safety and intended use
 

@@ -65,20 +65,34 @@ Acceptance criteria:
 - A circular-orbit scenario behaves consistently with the analytical reference.
 - Numerical errors and integration settings are reported rather than hidden.
 
-## M4 — Scenario sweeps and classification
+#### M4 — Scenario sweeps and classification
 
-**Purpose:** Explore how initial conditions affect a simplified trajectory.
+**Purpose:** Explore how initial conditions affect idealized orbital outcomes.
 
-Planned work:
-- Sweep insertion speed and flight-path angle.
-- Detect Earth intersection using the configured Earth radius.
-- Classify trajectories as Earth-intersecting, bound, or escaping, with classification rules defined in documentation.
-- Record assumptions and simulation settings with the outputs.
+**Status:** Implemented; 22 dedicated classification and sweep tests pass.
+
+Implemented work:
+- Sweep insertion speeds and flight-path angles at a configurable altitude.
+- Classify initial states as `earth-intersecting`, `bound`, or `escaping`.
+- Use specific orbital energy, angular momentum, eccentricity, periapsis, and the configured Earth radius.
+- Validate sweep inputs and the energy-classification tolerance.
+- Export reproducible scenario results to `results/scenario_sweep.csv` using `scripts/scenario_sweep.py`.
+
+Default sweep settings:
+- Altitude: 400,000 m.
+- Insertion speed: 6,500–11,000 m/s in 250 m/s increments.
+- Flight-path angle: −30° to +30° in 5° increments.
+- Total scenarios: 247.
 
 Acceptance criteria:
-- Classification boundaries and numerical tolerances are explicit.
-- Tests cover representative outcomes and boundary cases.
-- The classification does not imply real-world mission feasibility.
+- Classification rules and numerical tolerances are explicit.
+- Tests cover representative outcomes and invalid inputs.
+- Generated results record the initial conditions and classification metrics.
+- The classification is documented as an analytical initial-condition assessment, not a prediction of real mission feasibility.
+
+**Limitations:** The classifier assumes a point-mass Earth and vacuum. It does not model atmospheric drag, powered flight, guidance, or real launch constraints. Negative periapsis altitude indicates a mathematically Earth-intersecting orbit, not a physically realizable below-surface trajectory.
+
+## M5 — Plots and convergence
 
 ## M5 — Plots and convergence
 
