@@ -92,7 +92,6 @@ Acceptance criteria:
 
 **Limitations:** The classifier assumes a point-mass Earth and vacuum. It does not model atmospheric drag, powered flight, guidance, or real launch constraints. Negative periapsis altitude indicates a mathematically Earth-intersecting orbit, not a physically realizable below-surface trajectory.
 
-## M5 — Plots and convergence
 
 ## M5 — Plots and convergence
 

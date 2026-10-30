@@ -77,19 +77,28 @@ python scripts/scenario_sweep.py
 
 The script generates `results/scenario_sweep.csv`. The output should contain the initial conditions and classification metrics for each evaluated scenario.
 
-### 6. Numerical convergence — planned
+### 6. Numerical convergence — implemented
 
-Future convergence work should compare numerical solutions at different integration step sizes or tolerances, where applicable. Acceptance criteria should be defined for the quantities being compared.
+The project includes a reproducible RK4 convergence experiment in `scripts/convergence_analysis.py`.
 
-## Interpreting results
+Run it from the repository root:
 
-- A passing test suite confirms behavior only for the cases covered by the tests.
-- Numerical outputs depend on the model assumptions, units, and numerical methods.
-- An `earth-intersecting` classification indicates a mathematically Earth-intersecting trajectory under the analytical model.
-- A negative periapsis altitude is a mathematical indicator of Earth intersection, not a physically realizable below-surface orbit.
-- An `escaping` classification does not imply that a real spacecraft can complete a mission or achieve a particular operational objective.
-- The current model does not represent all real-world atmospheric, propulsion, guidance, structural, or launch constraints.
+```powershell
+python scripts/convergence_analysis.py
+```
 
+The experiment propagates a circular orbit at 400 km altitude for 5,600 seconds using integration step sizes of 40, 20, 10, and 5 seconds. It compares each final numerical position with the analytical circular-orbit position at the same elapsed time.
+
+The script generates:
+
+- `results/convergence_report.csv` — step sizes, simulation duration, final-position errors, and error-reduction ratios.
+- `results/plots/convergence_error.png` — a log-log plot of integration step size against final-position error.
+
+For the current reference scenario, the final-position errors are approximately 5.186 m, 0.2902 m, 0.01708 m, and 0.001034 m, respectively. The measured reduction ratios are consistent with the expected fourth-order convergence of classical RK4 for this experiment.
+
+Automated tests in `tests/test_convergence.py` verify that errors decrease with smaller step sizes, that reduction ratios fall within the bounds established for this fixed scenario, and that the report and plot are generated correctly.
+
+These results validate numerical behavior for the selected test case only. They do not establish a universal error bound or prove suitability for real mission design.
 ## Validation policy
 
 When adding a feature:
