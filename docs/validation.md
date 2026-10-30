@@ -99,6 +99,19 @@ For the current reference scenario, the final-position errors are approximately 
 Automated tests in `tests/test_convergence.py` verify that errors decrease with smaller step sizes, that reduction ratios fall within the bounds established for this fixed scenario, and that the report and plot are generated correctly.
 
 These results validate numerical behavior for the selected test case only. They do not establish a universal error bound or prove suitability for real mission design.
+## 6. Numerical convergence — implemented
+
+...
+
+## Interpreting results
+
+- A passing test suite confirms behavior only for the cases covered by the tests.
+- Numerical outputs depend on the model assumptions, units, and numerical methods.
+- An `earth-intersecting` classification indicates a mathematically Earth-intersecting trajectory under the analytical model.
+- A negative periapsis altitude is a mathematical indicator of Earth intersection, not a physically realizable below-surface orbit.
+- An `escaping` classification does not imply that a real spacecraft can complete a mission or achieve a particular operational objective.
+- The current model does not represent all real-world atmospheric, propulsion, guidance, structural, or launch constraints.
+
 ## Validation policy
 
 When adding a feature:

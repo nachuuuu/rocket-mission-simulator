@@ -1,9 +1,24 @@
+﻿# Python environments
 .venv/
+venv/
+
+# Python cache
 __pycache__/
 *.py[cod]
+*.egg-info/
+
+# Test and tooling caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-*.egg-info/
+
+# Build outputs
 build/
 dist/
+
+# Generated simulation outputs
+results/*.csv
+results/plots/*.png
+
+# Jupyter
+.ipynb_checkpoints/
